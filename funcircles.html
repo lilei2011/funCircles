@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
+    <script src="http://code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
+    <link rel="stylesheet" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/themes/smoothness/jquery-ui.css" />
+    <script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/jquery-ui.min.js"></script>
+    <style>
+        #canvas{
+           
+        }
+        h2{
+            text-align:center;
+            font-family: arial;
+        }
+        svg{
+            height:400px; 
+            width:700px;
+            display:block;
+            margin: auto;
+            border: 10px blue;
+            border-style: groove;
+            border-radius: 10px;
+        }
+        #stats{
+            margin:30px;
+            text-align:center;
+            font-family: arial;
+        }
+        input{
+            padding: 20px 40px;
+            margin:10px;
+            border-radius: 10px;
+            font-size: bigger;
+        }
+        #start{
+            background-color:red;
+        }
+        #reset{
+            background-color:green;
+        }
+    </style>
+    <script type="text/javascript">
+    totalCount = 0;
+    function Circle(html_id, level)
+    {
+        var id = html_id;
+        var difficultLevel = level;
+        this.makeSVG = function(tag, attrs) {
+            var el= document.createElementNS('http://www.w3.org/2000/svg', tag);
+            for (var k in attrs)
+                el.setAttribute(k, attrs[k]);
+            return el;
+        }
+
+        this.getRandom = function(x,y){
+            if(x<=y)
+            {   
+                min = x; max = y;
+            }
+            else
+            {
+                min = y; max = x;
+            }
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+        this.getRanColor = function(){
+            var x = this.getRandom(0,255);
+            var y = this.getRandom(0,255);
+            var z = this.getRandom(0,255);
+            return 'rgb('+x + ',' + y + ',' +z +')';
+        }
+        this.createCircle = function(difficultLevel){
+            
+            this.info = {
+                cx:this.getRandom(0,500),
+                cy:this.getRandom(0,500),
+                r: this.getRandom(30,50),
+                color:this.getRanColor(),
+                velocity:{x:this.getRandom(1,1), 
+                          y:this.getRandom(1,1)}
+            };
+            if(this.info.cx-this.info.r<0 || this.info.cx+this.info.r > document.getElementById('svg').offsetWidth)
+            {
+                this.info.cx = this.info.r;
+            }
+            if(this.info.cy-this.info.r<0 || this.info.cy+this.info.r > document.getElementById('svg').offsetHeight)
+            {
+                this.info.cy = this.info.r;
+            }
+            var circle = this.makeSVG('circle', 
+                {cx: this.info.cx, 
+                    cy: this.info.cy, 
+                    r:this.info.r, 
+                    stroke: 'black', 
+                    'stroke-width': 2, 
+                    id: html_id,
+                    fill: this.info.color});
+
+
+            document.getElementById('svg').appendChild(circle);  
+            var count = 0;
+            $(document).ready(function(){
+               $("circle").click(function(){
+                    $(this).hide();
+                    count++;
+                    console.log(count);
+                    $("p").text("Score: " +count);
+                    if(count==10)
+                    {
+                        stop();
+                        var usedTime = $("#time").html();
+                        alert("Congratulations! You finished in " + usedTime );
+                        console.log(usedTime);
+                    }
+                    
+               }); 
+               
+             }) ;      
+            console.log(circle);   
+            totalCount = count;   
+         }
+         
+         this.update = function(time){
+             var el = document.getElementById(id);
+             //see if the circle is going outside the browser. if it is, reverse the velocity
+            if( this.info.cx+this.info.r >= document.getElementById('svg').offsetWidth || this.info.cx-this.info.r <= 0)
+            {
+                this.info.velocity.x = this.info.velocity.x * -1;
+            }
+            if( this.info.cy+this.info.r >= document.getElementById('svg').offsetHeight || this.info.cy-this.info.r <= 0)
+            {
+                this.info.velocity.y = this.info.velocity.y * -1;
+            }
+             this.info.cx = this.info.cx + this.info.velocity.x*time;
+            this.info.cy = this.info.cy + this.info.velocity.y*time;
+
+            el.setAttribute("cx", this.info.cx);
+            el.setAttribute("cy", this.info.cy);
+         }
+         this.createCircle();
+    }
+    
+     function PlayGround()
+    {
+        
+        //var counter = 0;  //counts the number of circles created
+        var circles = [ ]; //array that will hold all the circles created in the app
+
+        this.createNewCircles = function(level){
+            for(var i=0; i<10; i++)
+            {
+                var new_circle = new Circle(i,level);    
+                circles.push(new_circle);
+                
+            }       
+            
+        }
+
+        //a loop that updates the circle's position on the screen
+        this.loop = function(){
+            for(circle in circles)
+            {
+                circles[circle].update(1);
+                
+                for(var i=0; i<circles.length; i++)
+                {
+                    var distanceX = Math.abs(circles[circle].info.cx - circles[i].info.cx);
+                    var distanceY = Math.abs(circles[circle].info.cy - circles[i].info.cy);
+                    var distance = Math.sqrt(Math.pow(distanceX, 2) + Math.pow(distanceY, 2));
+                    if(distance < circles[circle].info.r + circles[i].info.r)
+                    {
+                        circles[circle].info.velocity.x = circles[circle].info.velocity.x * -1;
+                        circles[circle].info.velocity.y = circles[circle].info.velocity.y * -1;
+                        circles[i].info.velocity.x = circles[i].info.velocity.x * -1;
+                        circles[i].info.velocity.y = circles[i].info.velocity.y * -1;
+                        circles[circle].update(1);
+                        circles[i].update(1);
+                    }
+                }
+
+                
+            }
+        }
+
+        
+    }
+
+   function loadPage(){      
+        
+         var playground = new PlayGround();
+         playground.createNewCircles();
+        
+        setInterval(playground.loop, 15);
+    };
+     window.onload = loadPage;
+
+var clsStopwatch = function() {
+    // Private vars
+    var startAt = 0;  // Time of last start / resume. (0 if not running)
+    var lapTime = 0;  // Time on the clock when last stopped in milliseconds
+ 
+    var now = function() {
+        return (new Date()).getTime(); 
+      }; 
+ 
+    // Public methods
+    // Start or resume
+    this.start = function() {
+        startAt = startAt ? startAt : now();
+      };
+ 
+    // Stop or pause
+    this.stop = function() {
+        // If running, update elapsed time otherwise keep it
+        lapTime = startAt ? lapTime + now() - startAt : lapTime;
+        startAt = 0; // Paused
+      };
+ 
+    // Reset
+    this.reset = function() {
+        lapTime = startAt = 0;
+      };
+ 
+    // Duration
+    this.time = function() {
+        return lapTime + (startAt ? now() - startAt : 0); 
+      };
+  };
+ 
+var x = new clsStopwatch();
+var $time;
+var clocktimer;
+ 
+function pad(num, size) {
+  var s = "0000" + num;
+  return s.substr(s.length - size);
+}
+ 
+function formatTime(time) {
+  var h = m = s = ms = 0;
+  var newTime = '';
+ 
+  h = Math.floor( time / (60 * 60 * 1000) );
+  time = time % (60 * 60 * 1000);
+  m = Math.floor( time / (60 * 1000) );
+  time = time % (60 * 1000);
+  s = Math.floor( time / 1000 );
+  
+ 
+  newTime = pad(m, 2) + ':' + pad(s, 2);
+  return newTime;
+}
+ 
+function show() {
+  $time = document.getElementById('time');
+  update();
+}
+ 
+function update() {
+  $('#time').html(formatTime(x.time())) ; 
+}
+ 
+function start() {
+  clocktimer = setInterval("update()", 1000);
+  x.start();
+}
+ 
+function stop() {
+  x.stop();
+  clearInterval(clocktimer);
+}
+ 
+function reset() {
+  stop();
+  x.reset();
+  update();
+  window.reload;
+}
+
+    $(document).ready(function(){
+        $("#start").click(function(){
+           //loadPage();
+           //location.reload();
+            start();
+           
+        });
+        $("#reset").click(function(){
+          location.reload();
+            reset();
+        })
+    });
+      
+</script>  
+</head>
+<body>
+
+    <div id="canvas">
+        <h2>click on the moving circles to make them disappear!</h2>
+        <svg id="svg" xmlns="http://www.w3.org/2000/svg"/>
+    </div>
+    <div id="stats">
+        <div>Time: <span id="time"></span></div>
+        <input type="button" value="start" id="start" >
+        <input type="button" value="reset" id="reset" >
+        <p>Score: </p>
+    </div>
+    
+
+   
+
+    
+</body>
+</html>
